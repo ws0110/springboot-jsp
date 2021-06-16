@@ -16,8 +16,8 @@ pipeline {
                     // branches: [[name: "${params.TAGS}" ]],
                     branches: [[name: '*/master']], 
                     userRemoteConfigs: [[
-                        credentialsId: 'gitlab_account', 
-                        url: 'http://gitlab.cjarchlab.net:8989/wsjang/spring-boot-jsp.git']]
+                        credentialsId: 'github_account', 
+                        url: 'https://github.com/ws0110/springboot-jsp.git']]
                 ])
             }
         }
@@ -38,7 +38,7 @@ pipeline {
 
         stage('deploy'){
             environment {
-                TARGET_SERVER = "ec2-user@13.124.122.98"
+                TARGET_SERVER = "ec2-user@3.37.86.195"
             }
             steps{
                 echo 'start deploy...'
@@ -58,9 +58,11 @@ pipeline {
         }
         success {
             echo 'success!!'
+            slackSend message: 'success!!', color: '#00FF00'
         }
         failure {
             echo 'failure!!'
+            slackSend message: 'failure!!', color: '#FF0000'
         }
     }
 
