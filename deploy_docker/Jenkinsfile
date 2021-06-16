@@ -1,0 +1,81 @@
+pipeline {
+    environment { 
+        registry = "jangwisu/sample" 
+        registryCredential = 'dockerhub' 
+        dockerImage = '' 
+    }
+    
+    agent any
+
+    tools {
+        jdk 'JAVA_8'
+        maven "MAVEN_3.8.1"
+    }
+
+    stages {
+        
+        
+        stage('checkout'){
+            steps {
+                echo 'start checkout...'
+                checkout ([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/master']], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'gitlab_account', 
+                        url: 'http://gitlab.cjarchlab.net:8989/wsjang/spring-boot-jsp.git']]
+                ])
+            }
+        }
+        stage('build'){
+            steps {
+                echo 'start build...'
+                sh "mvn -Dmaven.test.skip=true clean package"
+            }
+        }
+        
+        // test 생략 
+        // stage('test'){
+        //     steps {
+        //         echo 'start test...'
+        //         sh "mvn -B -Dmaven.test.failure.ignore verify"
+        //         step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+                
+        //     }
+        // }
+        
+        stage('build docker image') { 
+            steps { 
+                echo 'start build image...'
+                script { 
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER" 
+                }
+            } 
+        }
+        stage('push docker image') { 
+            steps { 
+                echo 'start push image...'
+                script { 
+                    docker.withRegistry( '', registryCredential ) { 
+                        dockerImage.push() 
+                    }
+                } 
+                sh "docker rmi $registry:$BUILD_NUMBER" 
+            }
+        } 
+
+
+        stage('deploy'){
+            environment {
+                TARGET_SERVER = "ec2-user@13.124.122.98"
+            }
+            steps{
+                echo 'start deploy...'
+                sshagent(['tomcat_ssh']) {
+                    sh "scp -r deploy_docker/*.sh ${TARGET_SERVER}:/home/ec2-user"
+                    sh "ssh ${TARGET_SERVER} 'sh /home/ec2-user/deploy_docker.sh $registry:$BUILD_NUMBER'"
+                }
+            }
+        }
+    }
+}

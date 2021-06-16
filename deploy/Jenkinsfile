@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JAVA_8'
+        maven "MAVEN_3.8.1"
+    }
+
+    stages {
+        
+        stage('checkout'){
+            steps {
+                echo 'start checkout...'
+                checkout ([
+                    $class: 'GitSCM',
+                    // branches: [[name: "${params.TAGS}" ]],
+                    branches: [[name: '*/master']], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'gitlab_account', 
+                        url: 'http://gitlab.cjarchlab.net:8989/wsjang/spring-boot-jsp.git']]
+                ])
+            }
+        }
+        stage('build'){
+            steps {
+                echo 'start build...'
+                sh "mvn -Dmaven.test.skip=true clean package"
+            }
+        }
+        stage('test'){
+            steps {
+                echo 'start test...'
+                sh "mvn -B -Dmaven.test.failure.ignore verify"
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+                
+            }
+        }
+
+        stage('deploy'){
+            environment {
+                TARGET_SERVER = "ec2-user@13.124.122.98"
+            }
+            steps{
+                echo 'start deploy...'
+                sshagent(['tomcat_ssh']) {
+                    //sh "ssh -o StrictHostKeyChecking=no ${TARGET_SERVER} uptime"
+                    sh "scp -r target/*.war ${TARGET_SERVER}:/home/ec2-user/build"
+                    sh "scp -r deploy/*.sh ${TARGET_SERVER}:/home/ec2-user"
+                    sh "ssh ${TARGET_SERVER} 'sh /home/ec2-user/deploy.sh'"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'jenkinsfile done...'
+        }
+        success {
+            echo 'success!!'
+        }
+        failure {
+            echo 'failure!!'
+        }
+    }
+
+}
