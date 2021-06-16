@@ -17,6 +17,7 @@ if [ -z $CURRENT_PID ]; then
 else
   echo "> Tomcat Stop..."
   $TOMCAT_PATH/bin/shutdown.sh
+  sleep 3
 fi
 
 echo "> Build File Copy..."
