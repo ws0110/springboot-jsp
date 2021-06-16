@@ -22,8 +22,8 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: '*/master']], 
                     userRemoteConfigs: [[
-                        credentialsId: 'gitlab_account', 
-                        url: 'http://gitlab.cjarchlab.net:8989/wsjang/spring-boot-jsp.git']]
+                        credentialsId: 'github_account', 
+                        url: 'https://github.com/ws0110/springboot-jsp.git']]
                 ])
             }
         }
@@ -67,11 +67,11 @@ pipeline {
 
         stage('deploy'){
             environment {
-                TARGET_SERVER = "ec2-user@13.124.122.98"
+                TARGET_SERVER = "ec2-user@3.37.86.195"
             }
             steps{
                 echo 'start deploy...'
-                sshagent(['tomcat_ssh']) {
+                sshagent(['ssh-target1']) {
                     sh "scp -r deploy_docker/*.sh ${TARGET_SERVER}:/home/ec2-user"
                     sh "ssh ${TARGET_SERVER} 'sh /home/ec2-user/deploy_docker.sh $registry:$BUILD_NUMBER'"
                 }
