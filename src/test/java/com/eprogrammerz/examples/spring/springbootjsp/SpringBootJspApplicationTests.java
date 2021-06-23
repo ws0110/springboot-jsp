@@ -13,7 +13,7 @@ public class SpringBootJspApplicationTests {
 
 	@Test
 	public void test1(){
-		System.out.println("test...");
+		System.out.println("test....");
 		assertEquals(100,  100);
 	}
 
